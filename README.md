@@ -133,3 +133,5 @@ except KeyboardInterrupt:
 ```
 
 ## 6. Jalankan kedua program Python tersebut
+![hasil](https://github.com/user-attachments/assets/eded89a9-1482-4af0-8950-5c9666a29442)
+
