@@ -13,7 +13,7 @@
 - Kafka
 - Install Kafka Python dengan `pip install kafka-python`
 
-## 1. Buat file .yaml. Sesuaikan field sesuai kebutuhan
+## 1. Buat file `docker-compose.yaml`. Sesuaikan field sesuai kebutuhan
 
 ```
 services:
