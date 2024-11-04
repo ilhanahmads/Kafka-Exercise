@@ -6,12 +6,15 @@
 # Konfigurasi
 
 ## Requirements
+
 - Docker
 - Java (Java 11 recommended)
 - Pyspark
 - Kafka
+- Install Kafka Python dengan `pip install kafka-python`
 
 ## 1. Buat file .yaml. Sesuaikan field sesuai kebutuhan
+
 ```
 services:
   zookeeper:
@@ -24,7 +27,7 @@ services:
 
   kafka:
     image: 'bitnami/kafka:latest'
-    container_name: kafka 
+    container_name: kafka
     environment:
       - KAFKA_BROKER_ID=1
       - KAFKA_ZOOKEEPER_CONNECT=zookeeper:2181
@@ -38,6 +41,7 @@ services:
 ```
 
 ## 2. Jalankan docker dan pastikan container untuk masing-masing service berhasil dibuat dan berjalan sempurna
+
 ```
 docker-compose up -d
 docker-compose ps
@@ -45,18 +49,54 @@ docker-container ls
 ```
 
 ## 3. Setelah masing-masing service berjalan sempurna, buatlah topic sebagai jalur penghubung antara producer (pengirim data) dan consumer (penerima data). Sesuaikan nama container dan nama topik sesuai kebutuhan
+
 ```
 docker exec -it <nama_container_kafka> kafka-topics.sh --create --topic <nama-topik> --bootstrap-server localhost:9092 --partitions 1 --replication-factor 1
 ```
 
 ## 4. Kita bisa cek daftar topic yang sudah ada dengan cara berikut
+
 ```
 docker exec -it kafka kafka-topics.sh --list --bootstrap-server localhost:9092
 ```
 
-## 5. Buat program python yang berperan sebagai producer dan consumer
+## 5. Buat program python yang berperan sebagai producer pada file `producer.py`
+
 ```
 # Producer
+
+import time
+import random
+from kafka import KafkaProducer
+import json
+
+# Menghubungkan dengan Kafka (Producer)
+producer = KafkaProducer(bootstrap_servers='localhost:9092',
+                         value_serializer=lambda v: json.dumps(v).encode('utf-8'))
+
+def generate_sensor_data(sensor_id):
+    suhu = random.randint(60, 100)
+    return {'sensor_id': sensor_id, 'suhu': suhu}
+
+sensor_ids = ['S1', 'S2', 'S3']
+
+try:
+    while True:
+        for sensor_id in sensor_ids:
+            data = generate_sensor_data(sensor_id)
+            producer.send('sensor-suhu', data)
+            print(f"Mengirim data: {data['sensor_id']} - {data['suhu']}°C")
+        time.sleep(1)
+except KeyboardInterrupt:
+    producer.close()
+    print("Producer stopped.")
+
+```
+
+## 6. Buat program python yang berperan sebagai consumer pada file `consumer.py`
+
+```
+# Consumer
 
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import from_json, col, concat, lit
@@ -102,36 +142,6 @@ query = alert_df \
 query.awaitTermination()
 ```
 
-```
-# Consumer
-
-import time
-import random
-from kafka import KafkaProducer
-import json
-
-# Menghubungkan dengan Kafka (Producer)
-producer = KafkaProducer(bootstrap_servers='localhost:9092',
-                         value_serializer=lambda v: json.dumps(v).encode('utf-8'))
-
-def generate_sensor_data(sensor_id):
-    suhu = random.randint(60, 100)
-    return {'sensor_id': sensor_id, 'suhu': suhu}
-
-sensor_ids = ['S1', 'S2', 'S3'] 
-
-try:
-    while True:
-        for sensor_id in sensor_ids:
-            data = generate_sensor_data(sensor_id)
-            producer.send('sensor-suhu', data)
-            print(f"Mengirim data: {data['sensor_id']} - {data['suhu']}°C")
-        time.sleep(1)
-except KeyboardInterrupt:
-    producer.close()
-    print("Producer stopped.")
-```
-
 ## 6. Jalankan kedua program Python tersebut
-![hasil](https://github.com/user-attachments/assets/eded89a9-1482-4af0-8950-5c9666a29442)
 
+![hasil](https://github.com/user-attachments/assets/eded89a9-1482-4af0-8950-5c9666a29442)
